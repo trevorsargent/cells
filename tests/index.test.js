@@ -744,3 +744,20 @@ describe('Derived Cells', () => {
     expect(derived).toEqual([f]);
   })
 })
+
+describe("Cell Names", () => {
+  test('names are available if set', () => {
+
+    const jeremy = Cell.source(0, {name: 'jeremy'})
+
+    expect(jeremy.name).toEqual('jeremy')
+
+    const derived = Cell.derived(() => {
+      jeremy.value + 1
+    }, {
+      name: 'derived'
+    })
+
+    expect(derived.name).toBe('derived')
+  })
+})

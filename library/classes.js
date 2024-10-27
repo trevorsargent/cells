@@ -40,6 +40,14 @@
  * Whether the cell should watch for changes deep into the given value. By default the cell only reacts to changes at the top level.
  * @property {(oldValue: T, newValue: T) => boolean} [equals]
  * A function that determines whether two values are equal. If not provided, the default equality function will be used.
+ * @property {string | undefined} [name]
+ * A name for the cell, used for debugging / printing dependency trees
+ * 
+ */
+
+/**
+ * @typedef {object} DerivedCellOptions
+ * @property {string} [name]
  */
 
 /**
@@ -536,6 +544,7 @@ export class Cell {
    * @template T
    * Creates a new Derived instance with the provided callback function.
    * @param {() => T} callback - The callback function to be used by the Derived instance.
+   * @param {Partial<DerivedCellOptions> | undefined} options
    * @returns {DerivedCell<T>} A new Derived instance.
    * ```
    * import { Cell } from '@adbl/cells';
@@ -549,7 +558,7 @@ export class Cell {
    * console.log(derived.value); // 6
    * ```
    */
-  static derived = (callback) => new DerivedCell(callback);
+  static derived = (callback, options) => new DerivedCell(callback, options);
 
   /**
    * Batches all the effects created to run only once.
@@ -703,11 +712,18 @@ export class Cell {
  * @extends {Cell<T>}
  */
 export class DerivedCell extends Cell {
+
+  /** @type {Partial<DerivedCellOptions> | undefined} */
+  #options;
+
   /**
    * @param {() => T} computedFn - A function that generates the value of the computed.
+   * @param {Partial<DerivedCellOptions> | undefined} options - options for the derived cell
    */
-  constructor(computedFn) {
+
+  constructor(computedFn, options) {
     super();
+    this.#options = options
     // Ensures that the cell is derived every time the computing function is called.
     const derivationWrapper = () => {
       activeComputedValues.push([this, derivationWrapper]);
@@ -731,6 +747,10 @@ export class DerivedCell extends Cell {
   set value(_) {
     throw new Error('Cannot set a derived Cell value.');
   }
+
+  get name(){
+    return this.#options?.name
+  }
 }
 
 /**
@@ -753,11 +773,16 @@ export class SourceCell extends Cell {
     super();
 
     this.options = options ?? {};
+
     this.setValue(this.#proxy(value));
 
     if (typeof value === 'object' && value !== null) {
       this.#originalObject = value;
     }
+  }
+
+  get name(){
+    return this.options.name
   }
 
   /**
